@@ -43,6 +43,17 @@ void add_to_order_book(t_order* order) {
 // Updates the price of an asset
 void update_asset_price(t_asset* asset) {
     // ... insert maths here
+    float update_percentage=0;
+	if(price_per_share < luld.max and price_per_share >luld.min){
+		if(order.quantity > 0)
+			update_percentage=order.quantity/100;
+		elseif (order.quantity <0)
+			update_percentage= -1 * order.quantity/100;
+		asset.price_per_share *= (1+update_percentage);
+	}
+	else
+		// request to stop the trade (because the luld range exceeded)
+    
 }
 
 // The main step
