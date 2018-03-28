@@ -52,7 +52,7 @@ void update_asset_price(t_asset* asset) {
 		asset.price_per_share *= (1+update_percentage);
 	}
 	else
-		// request to stop the trade (because the luld range exceeded)
+		// request to stop the trade (because the luld range exceeded) 
     
 }
 
