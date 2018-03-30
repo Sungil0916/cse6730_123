@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include "stocks.h"
 
-int n_assets = 1;
-t_asset assets[n_assets];
-t_linked_list input_queue;
+static int n_assets = 1;
+static t_asset assets[1];
+static t_linked_list input_queue;
 
 // Sets up the global assets included in the model
 void setup_assets() {
@@ -20,7 +20,7 @@ void setup_assets() {
 void setup_orders() {
     // Create the order
     t_order* sample_order = malloc(sizeof(t_order));
-    sample_order->asset = &assets[0];
+    sample_order->asset = &(assets[0]);
     sample_order->time = 1;
     sample_order->quantity = 3;
     // Push the order into the input queue
@@ -43,17 +43,6 @@ void add_to_order_book(t_order* order) {
 // Updates the price of an asset
 void update_asset_price(t_asset* asset) {
     // ... insert maths here
-    float update_percentage=0;
-	if(price_per_share < luld.max and price_per_share >luld.min){
-		if(order.quantity > 0)
-			update_percentage=order.quantity/100;
-		elseif (order.quantity <0)
-			update_percentage= -1 * order.quantity/100;
-		asset.price_per_share *= (1+update_percentage);
-	}
-	else
-		// request to stop the trade (because the luld range exceeded) 
-    
 }
 
 // The main step

@@ -6,7 +6,7 @@ typedef struct s_threshold {
 
 // Defines an asset
 typedef struct s_asset {
-    char name[4];           // Name of the asset
+    char name[5];           // Name of the asset
     float price_per_share;  // Price per share, in $$$
     t_threshold luld;
 } t_asset;
@@ -46,3 +46,5 @@ void* pop_back(t_linked_list* list);
 
 // Print (for debugging)
 void print_list(t_linked_list* list);
+void print_order(t_order* order);
+void print_asset(t_asset* asset);
