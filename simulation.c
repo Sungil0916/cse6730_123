@@ -29,7 +29,10 @@ void setup_orders() {
 
 // Checks if an order is able to go through
 int is_valid(t_order* order, t_asset* asset) {
-    	if (order.asset.price_per_share < asset.luld.max or order.asset.price_per_share< asset.luld.min)
+    	if (order.asset.price_per_share < asset.luld.max) || (order.asset.price_per_share< asset.luld.min)
+	{
+	
+	}
 		;//up date orderbook
     else
         ;//push back it
