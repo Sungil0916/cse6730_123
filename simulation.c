@@ -68,14 +68,14 @@
 		
 		struct EventData *d;
 		
-	    if (order.quantity <0){
-		assets.price_per_share = assets.price_per_share - order.quantity * 0.001*assets.price_per_share; //deduct 0.001 per sell order quantity 
+	    if (order->quantity <0){
+		assets->price_per_share = assets->price_per_share - order->quantity * 0.001*assets->price_per_share; //deduct 0.001 per sell order quantity 
 		}
 		else
 		{
-			assets.price_per_share = assets.price_per_share + order.quantity * 0.01*assets.price_per_share;//add 0.001 per buy order quantity 
+			assets->price_per_share = assets->price_per_share + order->quantity * 0.01*assets->price_per_share;//add 0.001 per buy order quantity 
 		};
-		return asset.price_per_share;
+		return asset->price_per_share;
 	}
 	
 	
