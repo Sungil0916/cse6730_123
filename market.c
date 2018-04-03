@@ -37,7 +37,7 @@ void setup_assets()
     assets[1].name = "MICR";
     assets[1].price_per_share = 20;
     assets[1].history_price = &lists[0];
-    assets[1].history_time = &gitlists[1];
+    assets[1].history_time = &lists[1];
     calc_limits(&assets[1]);
 }
 

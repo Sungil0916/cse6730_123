@@ -20,11 +20,15 @@ void push_front(t_list *list, void* data)
     t_list_node* new_node = calloc(1, sizeof(t_list_node));
     new_node->data = data;
     new_node->next = list->first;
-    list->first = new_node;
     if (list->size == 0)
     {
         list->last = new_node;
     }
+    else
+    {
+        list->first->prev = new_node;
+    }
+    list->first = new_node;
     list->size ++;
 }
 
