@@ -1,69 +1,60 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
 #include "market.h"
+#include "fargs.h"
 
-// Number of assets (IE google, microsoft, etc)
-int n_assets = 2;
-int cur_time = 0;
-int end_time = 48;
+int cur_time = 9;
+int end_time = 17;
+int use_luld = 0;
+float open_price, cur_price;
+float order_mean, order_var;
+t_list FEL;
+t_list history_price;
+t_list history_time;
+t_luld threshold;
+char* filename = "./history.csv";
 
-t_list* FEL;
-t_list* processed_orders;
-t_asset* assets;
+int processed_orders;
+time_t real_start_time;
 
-// Calculate LULD for a particular asset
-void calc_limits(t_asset* asset)
+// Random normal distribution
+float rand_normal(float mean, float var)
 {
-    // TODO: Accuracy
-    float price = asset->price_per_share;
-    float dp = price * 0.01;
-    asset->luld.min = price - dp;
-    asset->luld.max = price + dp;
+    float total = 0;
+    for (int i = 0; i < 12; i++)
+        total += rand() / (float)RAND_MAX;
+    total -= 6;
+    return (var * total) + mean;
 }
 
-// Setup assets at the start of the simulation
-void setup_assets()
+// Calculate LULD for the asset
+void calc_limits()
 {
-    assets = malloc(sizeof(t_asset) * n_assets);
-    t_list* lists;
-    // Google
-    lists = calloc(2, sizeof(t_list));
-    assets[0].name = "GOOG";
-    assets[0].price_per_share = 10;
-    assets[0].history_price = &lists[0];
-    assets[0].history_time = &lists[1];
-    calc_limits(&assets[0]);
-    // Microsoft
-    lists = calloc(2, sizeof(t_list));
-    assets[1].name = "MICR";
-    assets[1].price_per_share = 20;
-    assets[1].history_price = &lists[0];
-    assets[1].history_time = &lists[1];
-    calc_limits(&assets[1]);
+    // TODO: Accuracy
+    float dp = cur_price * 0.01;
+    threshold.min = cur_price - dp;
+    threshold.max = cur_price + dp;
 }
 
 // Create the orders that will be processed during the simulation
 void setup_orders()
 {
-    FEL = malloc(sizeof(t_list));
-    processed_orders = malloc(sizeof(t_list));
-    int n_orders = 4; // Temporary
-    t_order* orders = malloc(sizeof(t_order) * n_orders);
-    orders[0].time = 0;
-    orders[0].asset = NULL;
-    
-    orders[1].time = 5;
-    orders[1].asset = &assets[0];
-    orders[1].quantity = 3;
-    
-    orders[2].time = 10;
-    orders[2].asset = &assets[1];
-    orders[2].quantity = 7;
-    
-    orders[3].time = 24;
-    orders[3].asset = NULL;
+    clear(&FEL);
+    clear(&history_price);
+    clear(&history_time);
+    int n_hours = end_time - cur_time;
+    int orders_per_hour = 10;
+    int n_orders = n_hours * orders_per_hour;
+    t_order* order;
     for (int i = 0; i < n_orders; i++)
     {
-        push_front(FEL, &orders[i]);
+        order = malloc(sizeof(t_order));
+        order->time = (i / orders_per_hour) + cur_time;
+        order->quantity = (int)rand_normal(order_mean, order_var);
+        push_front(&FEL, order);
     }
 }
 
@@ -71,7 +62,7 @@ void setup_orders()
 float get_change_in_asset_price(t_order* order)
 {
     // TODO: Accuracy
-    return order->asset->price_per_share * order->quantity * 0.001;
+    return cur_price * order->quantity * 0.001;
 }
 
 // Checks if the price_per_share of an asset will go out-of-bounds
@@ -79,22 +70,23 @@ float get_change_in_asset_price(t_order* order)
 int is_valid(t_order* order)
 {
     float dp = get_change_in_asset_price(order);
-    float p = order->asset->price_per_share + dp;
-    return !(p > order->asset->luld.max || p < order->asset->luld.min);
+    float p = cur_price + dp;
+    return !(p > threshold.max || p < threshold.min);
 }
 
 // Process an order
 void process_order(t_order* order)
 {
-    push_front(processed_orders, (void*)order);
     // Record asset price at the current time
-    int* nums = malloc(sizeof(int) * 2);
-    nums[0] = order->asset->price_per_share;
-    nums[1] = cur_time;
-    push_front(order->asset->history_price, &nums[0]);
-    push_front(order->asset->history_time, &nums[1]);
+    float* nums = malloc(sizeof(int) * 2);
+    nums[0] = cur_price;
+    nums[1] = (float)cur_time;
+    push_back(&history_price, &nums[0]);
+    push_back(&history_time, &nums[1]);
+    free(order);
     // Adjust the price
-    order->asset->price_per_share += get_change_in_asset_price(order);
+    cur_price += get_change_in_asset_price(order);
+    processed_orders++;
 }
 
 // Breaks an order into two so that at least one of them is valid
@@ -102,33 +94,93 @@ t_order* breakup_order(t_order* order)
 {
     // TODO: Accuracy
     t_order* new = malloc(sizeof(t_order));
-    new->asset = order->asset;
     new->time = order->time;
     new->quantity = order->quantity / 2;
     order->quantity /= 2;
 }
 
-int main(void)
+void breakdown()
 {
-    setup_assets();
+    clear(&FEL);
+    clear(&history_price);
+    clear(&history_time);
+}
+
+void err(const char* str)
+{
+    fprintf(stderr, "%s\n", str);
+    exit(-1);
+}
+
+// Setup simulation parameters
+void get_args(int argc, char* argv[])
+{
+    char* arg;
+    arg = get_arg("open", argc, argv);
+    if (!arg)
+        err("No \"-open\" argument provided.");
+    open_price = atof(arg);
+    if (!open_price || open_price < 0)
+        err("\"-open\" must be a floating-point value greater than 0.");
+    
+    arg = get_arg("luld", argc, argv);
+    if (arg && strcmp(arg, "0") != 0 && strcmp(arg, "false") != 0)
+        use_luld = 1;
+    
+    arg = get_arg("order_mean", argc, argv);
+    if (!arg)
+        err("No \"-order_mean\" argument provided.");
+    order_mean = atof(arg);
+    
+    arg = get_arg("order_var", argc, argv);
+    if (!arg)
+        err("No \"-order_var\" argument provided.");
+    order_var = atof(arg);
+    
+    arg = get_arg("file", argc, argv);
+    if (arg)
+        filename = arg;
+}
+
+void print_results()
+{
+    fprintf(stdout, "r-time\tproc\tigno\topen\t\tclose\n");
+    fprintf(stdout, "%0.2f\t%d\t%d\t$%0.2f\t\t$%0.2f\n",
+        difftime(time(NULL), real_start_time),
+        processed_orders,
+        FEL.size,
+        open_price, cur_price);
+    // Write to file
+    FILE* file = fopen(filename, "w+");
+    fprintf(file, "time,price\n");
+    for (int i = 0; i < history_price.size; i++)
+        fprintf(file, "%d,%0.2f\n",
+            (int)(*(float*)element_at(&history_time, i)),
+            *(float*)element_at(&history_price, i));
+    fclose(file);
+    fprintf(stdout, "Price history written to \"./history.csv\".\n");
+    fprintf(stdout, "Simulation terminated successfully.\n");
+}
+
+int main(int argc, char* argv[])
+{    
+    // Setup
+    get_args(argc, argv);
+    cur_price = open_price;
     setup_orders();
+    calc_limits();
+    
+    // Run
+    real_start_time = time(NULL);
     t_order* cur_order;
-    t_order* other_order;
     while (cur_time < end_time)
     {
-        cur_order = pop_back(FEL);
+        cur_order = pop_back(&FEL);
         // Indicates the FEL is empty
         if (!cur_order) break;
-        // Indicates end/start of a day
-        if (!cur_order->asset)
-        {
-            for (int i = 0; i < n_assets; i++)
-            {
-                calc_limits(&assets[i]);
-            }
-        }
+        cur_time = cur_order->time;
         // Valid order
-        else if (is_valid(cur_order))
+        if (!use_luld || is_valid(cur_order))
         {
             process_order(cur_order);
         }
@@ -136,10 +188,12 @@ int main(void)
         else
         {
             // TODO: Adjust the time of the order(s)
-            push_front(FEL, (void*)cur_order);
-            push_front(FEL, (void*)breakup_order(cur_order));
+            push_front(&FEL, (void*)cur_order);
+            push_front(&FEL, (void*)breakup_order(cur_order));
         }
     }
+    print_results();
+    breakdown();
 }
 
 

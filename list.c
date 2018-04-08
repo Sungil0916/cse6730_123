@@ -4,6 +4,21 @@
 // TODO: Add "add_before" and "add_after" to support
 //       adding data anywhere in the list
 
+void clear(t_list *list)
+{
+    t_list_node* last_node;
+    t_list_node* cur_node = list->first;
+    while (cur_node)
+    {
+        last_node = cur_node;
+        cur_node = cur_node->next;
+        free(last_node);
+    }
+    list->first = NULL;
+    list->last = NULL;
+    list->size = 0;
+}
+
 void* element_at(t_list *list, int index)
 {
     int i = 0;
@@ -29,6 +44,23 @@ void push_front(t_list *list, void* data)
         list->first->prev = new_node;
     }
     list->first = new_node;
+    list->size ++;
+}
+
+void push_back(t_list *list, void* data)
+{
+    t_list_node* new_node = calloc(1, sizeof(t_list_node));
+    new_node->data = data;
+    new_node->prev = list->last;
+    if (list->size == 0)
+    {
+        list->first = new_node;
+    }
+    else
+    {
+        list->last->next = new_node;
+    }
+    list->last = new_node;
     list->size ++;
 }
 

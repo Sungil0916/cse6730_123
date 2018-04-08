@@ -12,11 +12,17 @@ struct s_list {
 };
 typedef struct s_list t_list;
 
+// Resets the list
+void clear(t_list *list);
+
 // Gets an element in the list with 0-based indexing
 void* element_at(t_list *list, int index);
 
 // Push to the front of the list
 void push_front(t_list *list, void* data);
+
+// Push to the back of the list
+void push_back(t_list *list, void* data);
 
 // TODO: Implement
 /*
