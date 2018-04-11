@@ -10,11 +10,11 @@ int cur_time = 9;
 int end_time = 17;
 int use_luld = 0;
 int orders_per_hour = 1000;
-float open_price, cur_price;
+double open_price, cur_price;
 
 int n_order_dist = 1;
 t_ndist* order_dists;
-float* order_dist_weights;
+double* order_dist_weights;
 
 t_list FEL;
 t_list history_price;
@@ -26,24 +26,24 @@ int processed_orders;
 time_t real_start_time;
 
 // Random normal distribution
-float rand_normal(t_ndist dist)
+double rand_normal(t_ndist dist)
 {
-    float total = 0;
+    double total = 0;
     for (int i = 0; i < 12; i++)
-        total += rand() / (float)RAND_MAX;
+        total += rand() / (double)RAND_MAX;
     total -= 6;
     return (total * dist.variance) + dist.mean;
 }
 
 // Random multinormal distribution
-float multi_rand_normal(int count, t_ndist* dists, float* weights)
+double multi_rand_normal(int count, t_ndist* dists, double* weights)
 {
     int i;
-    float total, curTotal;
+    double total, curTotal;
     for (i = 0; i < count; i++)
         total += (weights == NULL) ? 1 : weights[i];
-    float pick = total * rand() / (float)RAND_MAX;
-    float dt;
+    double pick = total * rand() / (double)RAND_MAX;
+    double dt;
     for (i = 0; i < count; i++)
     {
         dt = (weights == NULL) ? 1 : weights[i];
@@ -57,7 +57,7 @@ float multi_rand_normal(int count, t_ndist* dists, float* weights)
 void calc_limits()
 {
     // TODO: Accuracy
-    float dp = cur_price * 0.5;
+    double dp = cur_price * 0.5;
     threshold.min = cur_price - dp;
     threshold.max = cur_price + dp;
 }
@@ -81,18 +81,18 @@ void setup_orders()
 }
 
 // Adjust the price of an asset based on an order that went through
-float get_change_in_asset_price(t_order* order)
+double get_change_in_asset_price(t_order* order)
 {
     // TODO: Accuracy
-    return cur_price * order->quantity * 0.00001;
+    return cur_price * order->quantity * 0.000005;
 }
 
 // Checks if the price_per_share of an asset will go out-of-bounds
 // if this order is processed
 int is_valid(t_order* order)
 {
-    float dp = get_change_in_asset_price(order);
-    float p = cur_price + dp;
+    double dp = get_change_in_asset_price(order);
+    double p = cur_price + dp;
     return p <= threshold.max && p >= threshold.min;
 }
 
@@ -100,9 +100,9 @@ int is_valid(t_order* order)
 void process_order(t_order* order)
 {
     // Record asset price at the current time
-    float* nums = malloc(sizeof(int) * 2);
+    double* nums = malloc(sizeof(double) * 2);
     nums[0] = cur_price;
-    nums[1] = (float)cur_time;
+    nums[1] = (double)cur_time;
     push_back(&history_price, &nums[0]);
     push_back(&history_time, &nums[1]);
     free(order);
@@ -126,8 +126,8 @@ void breakdown()
     clear(&FEL);
     clear(&history_price);
     clear(&history_time);
-    free(order_dists);
-    free(order_dist_weights);
+    //free(order_dists);
+    //free(order_dist_weights);
 }
 
 void err(const char* str)
@@ -147,7 +147,7 @@ void get_args(int argc, char* argv[])
         err("No \"-open\" argument provided.");
     open_price = atof(argv[ind + 1]);
     if (!open_price || open_price < 0)
-        err("\"-open\" must be a floating-point value greater than 0.");
+        err("\"-open\" must be a double-precision float value greater than 0.");
     
     ind = get_arg_index("luld", argc, argv);
     if (ind >= 0)
@@ -170,10 +170,10 @@ void get_args(int argc, char* argv[])
     if (var_ind < 0)
         err("No \"-order_var\" argument provided.");
     if (weight_ind >= 0)
-        order_dist_weights = malloc(sizeof(float) * n_order_dist);
+        order_dist_weights = malloc(sizeof(double) * n_order_dist);
     
     order_dists = malloc(sizeof(t_ndist) * n_order_dist);
-    float tmp;
+    double tmp;
     for (int i = 0; i < n_order_dist; i++)
     {
         tmp = atof(argv[mean_ind + 1 + i]);
@@ -218,8 +218,8 @@ void print_results()
     fprintf(file, "time,price\n");
     for (int i = 0; i < history_price.size; i++)
         fprintf(file, "%d,%0.2f\n",
-            (int)(*(float*)element_at(&history_time, i)),
-            *(float*)element_at(&history_price, i));
+            (int)(*(double*)element_at(&history_time, i)),
+            *(double*)element_at(&history_price, i));
     fclose(file);
     fprintf(stdout, "Price history written to \"./history.csv\".\n");
     fprintf(stdout, "Simulation terminated successfully.\n");
