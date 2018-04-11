@@ -9,6 +9,7 @@
 int cur_time = 9;
 int end_time = 17;
 int use_luld = 0;
+int orders_per_hour = 1000;
 float open_price, cur_price;
 t_ndist order_dist;
 t_list FEL;
@@ -50,7 +51,7 @@ float multi_rand_normal(int count, t_ndist* dists, float* weights)
 void calc_limits()
 {
     // TODO: Accuracy
-    float dp = cur_price * 0.01;
+    float dp = cur_price * 0.5;
     threshold.min = cur_price - dp;
     threshold.max = cur_price + dp;
 }
@@ -62,7 +63,6 @@ void setup_orders()
     clear(&history_price);
     clear(&history_time);
     int n_hours = end_time - cur_time;
-    int orders_per_hour = 10;
     int n_orders = n_hours * orders_per_hour;
     t_order* order;
     for (int i = 0; i < n_orders; i++)
@@ -78,7 +78,7 @@ void setup_orders()
 float get_change_in_asset_price(t_order* order)
 {
     // TODO: Accuracy
-    return cur_price * order->quantity * 0.001;
+    return cur_price * order->quantity * 0.000005;
 }
 
 // Checks if the price_per_share of an asset will go out-of-bounds
@@ -87,7 +87,7 @@ int is_valid(t_order* order)
 {
     float dp = get_change_in_asset_price(order);
     float p = cur_price + dp;
-    return !(p > threshold.max || p < threshold.min);
+    return p <= threshold.max && p >= threshold.min;
 }
 
 // Process an order
@@ -152,6 +152,10 @@ void get_args(int argc, char* argv[])
     if (!arg)
         err("No \"-order_var\" argument provided.");
     order_dist.variance = atof(arg);
+    
+    arg = get_arg("orders_per_hour", argc, argv);
+    if (arg)
+        orders_per_hour = atof(arg);
     
     arg = get_arg("file", argc, argv);
     if (arg)
