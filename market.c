@@ -11,7 +11,11 @@ int end_time = 17;
 int use_luld = 0;
 int orders_per_hour = 1000;
 float open_price, cur_price;
-t_ndist order_dist;
+
+int n_order_dist = 1;
+t_ndist* order_dists;
+float* order_dist_weights;
+
 t_list FEL;
 t_list history_price;
 t_list history_time;
@@ -37,13 +41,15 @@ float multi_rand_normal(int count, t_ndist* dists, float* weights)
     int i;
     float total, curTotal;
     for (i = 0; i < count; i++)
-        total += weights[i];
+        total += (weights == NULL) ? 1 : weights[i];
     float pick = total * rand() / (float)RAND_MAX;
+    float dt;
     for (i = 0; i < count; i++)
     {
-        if (pick < curTotal)
+        dt = (weights == NULL) ? 1 : weights[i];
+        if (pick >= curTotal && pick < curTotal + dt)
             return rand_normal(dists[i]);
-        curTotal += weights[i];
+        curTotal += dt;
     }
 }
 
@@ -69,7 +75,7 @@ void setup_orders()
     {
         order = malloc(sizeof(t_order));
         order->time = (i / orders_per_hour) + cur_time;
-        order->quantity = (int)rand_normal(order_dist);
+        order->quantity = (int)multi_rand_normal(n_order_dist, order_dists, order_dist_weights);
         push_front(&FEL, order);
     }
 }
@@ -78,7 +84,7 @@ void setup_orders()
 float get_change_in_asset_price(t_order* order)
 {
     // TODO: Accuracy
-    return cur_price * order->quantity * 0.000005;
+    return cur_price * order->quantity * 0.00001;
 }
 
 // Checks if the price_per_share of an asset will go out-of-bounds
@@ -120,6 +126,8 @@ void breakdown()
     clear(&FEL);
     clear(&history_price);
     clear(&history_time);
+    free(order_dists);
+    free(order_dist_weights);
 }
 
 void err(const char* str)
@@ -131,35 +139,70 @@ void err(const char* str)
 // Setup simulation parameters
 void get_args(int argc, char* argv[])
 {
-    char* arg;
-    arg = get_arg("open", argc, argv);
-    if (!arg)
+    int ind;
+    
+    // Prices
+    ind = get_arg_index("open", argc, argv);
+    if (ind < 0)
         err("No \"-open\" argument provided.");
-    open_price = atof(arg);
+    open_price = atof(argv[ind + 1]);
     if (!open_price || open_price < 0)
         err("\"-open\" must be a floating-point value greater than 0.");
     
-    arg = get_arg("luld", argc, argv);
-    if (arg && strcmp(arg, "0") != 0 && strcmp(arg, "false") != 0)
+    ind = get_arg_index("luld", argc, argv);
+    if (ind >= 0)
+    {
         use_luld = 1;
+        if (strcmp(argv[ind + 1], "0") == 0 || strcmp(argv[ind + 1], "false") == 0)
+            use_luld = 0;
+    }
     
-    arg = get_arg("order_mean", argc, argv);
-    if (!arg)
+    // Distributions
+    ind = get_arg_index("n_means", argc, argv);
+    if (ind >= 0)
+        n_order_dist = atoi(argv[ind + 1]);
+    
+    int mean_ind = get_arg_index("order_mean", argc, argv);
+    int var_ind = get_arg_index("order_var", argc, argv);
+    int weight_ind = get_arg_index("order_weight", argc, argv);
+    if (mean_ind < 0)
         err("No \"-order_mean\" argument provided.");
-    order_dist.mean = atof(arg);
-    
-    arg = get_arg("order_var", argc, argv);
-    if (!arg)
+    if (var_ind < 0)
         err("No \"-order_var\" argument provided.");
-    order_dist.variance = atof(arg);
+    if (weight_ind >= 0)
+        order_dist_weights = malloc(sizeof(float) * n_order_dist);
     
-    arg = get_arg("orders_per_hour", argc, argv);
-    if (arg)
-        orders_per_hour = atof(arg);
+    order_dists = malloc(sizeof(t_ndist) * n_order_dist);
+    float tmp;
+    for (int i = 0; i < n_order_dist; i++)
+    {
+        tmp = atof(argv[mean_ind + 1 + i]);
+        if (!tmp)
+            err("\"-n_means\" incorrectly set for number of given parameters");
+        order_dists[i].mean = tmp;
+        
+        tmp = atof(argv[var_ind + 1 + i]);
+        if (!tmp)
+            err("\"-n_means\" incorrectly set for number of given parameters");
+        order_dists[i].variance = tmp;
+        if (order_dist_weights)
+        {
+            tmp = atof(argv[weight_ind + 1 + i]);
+            if (!tmp)
+                err("\"-n_means\" incorrectly set for number of given parameters");
+            order_dist_weights[i] = tmp;
+        }
+    }
     
-    arg = get_arg("file", argc, argv);
-    if (arg)
-        filename = arg;
+    // Etc
+        
+    ind = get_arg_index("orders_per_hour", argc, argv);
+    if (ind >= 0)
+        orders_per_hour = atof(argv[ind + 1]);
+    
+    ind = get_arg_index("file", argc, argv);
+    if (ind >= 0)
+        filename = argv[ind + 1];
 }
 
 void print_results()
