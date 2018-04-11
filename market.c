@@ -105,9 +105,9 @@ void process_order(t_order* order)
     nums[1] = (double)cur_time;
     push_back(&history_price, &nums[0]);
     push_back(&history_time, &nums[1]);
-    free(order);
     // Adjust the price
     cur_price += get_change_in_asset_price(order);
+    free(order);
     processed_orders++;
 }
 
@@ -116,7 +116,15 @@ t_order* breakup_order(t_order* order)
 {
     // TODO: Accuracy
     t_order* new = malloc(sizeof(t_order));
-    new->time = order->time;
+    if (FEL.size > 0)
+    {
+        order->time = ((t_order*)FEL.first->data)->time + 1;
+        new->time = ((t_order*)FEL.first->data)->time + 1;
+    }
+    else
+    {
+        new->time = order->time + 1;
+    }
     new->quantity = order->quantity / 2;
     order->quantity /= 2;
 }
@@ -153,7 +161,7 @@ void get_args(int argc, char* argv[])
     if (ind >= 0)
     {
         use_luld = 1;
-        if (strcmp(argv[ind + 1], "0") == 0 || strcmp(argv[ind + 1], "false") == 0)
+        if (ind + 1 < argc && (strcmp(argv[ind + 1], "0") == 0 || strcmp(argv[ind + 1], "false") == 0))
             use_luld = 0;
     }
     
