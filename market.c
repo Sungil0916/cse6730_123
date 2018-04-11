@@ -10,6 +10,7 @@ int cur_time = 9;
 int end_time = 17;
 int use_luld = 0;
 int orders_per_hour = 1000;
+int include_all = 0;
 double open_price, cur_price;
 
 int n_order_dist = 1;
@@ -165,6 +166,14 @@ void get_args(int argc, char* argv[])
             use_luld = 0;
     }
     
+    ind = get_arg_index("include_all", argc, argv);
+    if (ind >= 0)
+    {
+        include_all = 1;
+        if (ind + 1 < argc && (strcmp(argv[ind + 1], "0") == 0 || strcmp(argv[ind + 1], "false") == 0))
+            include_all = 0;
+    }
+    
     // Distributions
     ind = get_arg_index("n_means", argc, argv);
     if (ind >= 0)
@@ -224,12 +233,24 @@ void print_results()
     // Write to file
     FILE* file = fopen(filename, "w+");
     fprintf(file, "time,price\n");
-    for (int i = 0; i < history_price.size; i++)
-        fprintf(file, "%d,%0.2f\n",
-            (int)(*(double*)element_at(&history_time, i)),
-            *(double*)element_at(&history_price, i));
+    int prev_time = (int)(*(double*)history_time.first->data);
+    int cur_time;
+    for (int i = 1; i < history_price.size; i++)
+    {
+        cur_time = (int)(*(double*)element_at(&history_time, i));
+        if (include_all || cur_time > prev_time)
+        {
+            fprintf(file, "%d,%0.2f\n",
+                prev_time,
+                *(double*)element_at(&history_price, i - 1));
+            prev_time = cur_time;
+        }
+    }
+    fprintf(file, "%d,%0.2f\n",
+                cur_time,
+                *(double*)element_at(&history_price, history_price.size - 1));
     fclose(file);
-    fprintf(stdout, "Price history written to \"./history.csv\".\n");
+    fprintf(stdout, "Price history written to \"%s\".\n", filename);
     fprintf(stdout, "Simulation terminated successfully.\n");
 }
 
