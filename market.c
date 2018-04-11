@@ -135,8 +135,8 @@ void breakdown()
     clear(&FEL);
     clear(&history_price);
     clear(&history_time);
-    //free(order_dists);
-    //free(order_dist_weights);
+    free(order_dists);
+    free(order_dist_weights);
 }
 
 void err(const char* str)
@@ -245,10 +245,12 @@ void print_results()
                 *(double*)element_at(&history_price, i - 1));
             prev_time = cur_time;
         }
+        free(element_at(&history_price, i - 1));
     }
     fprintf(file, "%d,%0.2f\n",
                 cur_time,
                 *(double*)element_at(&history_price, history_price.size - 1));
+    free(element_at(&history_price, history_price.size - 1));
     fclose(file);
     fprintf(stdout, "Price history written to \"%s\".\n", filename);
     fprintf(stdout, "Simulation terminated successfully.\n");
