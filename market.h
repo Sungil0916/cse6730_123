@@ -11,3 +11,10 @@ struct s_order
     int quantity;
 };
 typedef struct s_order t_order;
+
+struct s_ndist
+{
+    float mean;
+    float variance;
+};
+typedef struct s_ndist t_ndist;

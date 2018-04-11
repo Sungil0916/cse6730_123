@@ -10,7 +10,7 @@ int cur_time = 9;
 int end_time = 17;
 int use_luld = 0;
 float open_price, cur_price;
-float order_mean, order_var;
+t_ndist order_dist;
 t_list FEL;
 t_list history_price;
 t_list history_time;
@@ -21,13 +21,29 @@ int processed_orders;
 time_t real_start_time;
 
 // Random normal distribution
-float rand_normal(float mean, float var)
+float rand_normal(t_ndist dist)
 {
     float total = 0;
     for (int i = 0; i < 12; i++)
         total += rand() / (float)RAND_MAX;
     total -= 6;
-    return (var * total) + mean;
+    return (total * dist.variance) + dist.mean;
+}
+
+// Random multinormal distribution
+float multi_rand_normal(int count, t_ndist* dists, float* weights)
+{
+    int i;
+    float total, curTotal;
+    for (i = 0; i < count; i++)
+        total += weights[i];
+    float pick = total * rand() / (float)RAND_MAX;
+    for (i = 0; i < count; i++)
+    {
+        if (pick < curTotal)
+            return rand_normal(dists[i]);
+        curTotal += weights[i];
+    }
 }
 
 // Calculate LULD for the asset
@@ -53,7 +69,7 @@ void setup_orders()
     {
         order = malloc(sizeof(t_order));
         order->time = (i / orders_per_hour) + cur_time;
-        order->quantity = (int)rand_normal(order_mean, order_var);
+        order->quantity = (int)rand_normal(order_dist);
         push_front(&FEL, order);
     }
 }
@@ -130,12 +146,12 @@ void get_args(int argc, char* argv[])
     arg = get_arg("order_mean", argc, argv);
     if (!arg)
         err("No \"-order_mean\" argument provided.");
-    order_mean = atof(arg);
+    order_dist.mean = atof(arg);
     
     arg = get_arg("order_var", argc, argv);
     if (!arg)
         err("No \"-order_var\" argument provided.");
-    order_var = atof(arg);
+    order_dist.variance = atof(arg);
     
     arg = get_arg("file", argc, argv);
     if (arg)
