@@ -58,7 +58,7 @@ double multi_rand_normal(int count, t_ndist* dists, double* weights)
 void calc_limits()
 {
     // TODO: Accuracy
-    double dp = cur_price * 0.5;
+    double dp = cur_price * 0.05;
     threshold.min = cur_price - dp;
     threshold.max = cur_price + dp;
 }
@@ -85,7 +85,7 @@ void setup_orders()
 double get_change_in_asset_price(t_order* order)
 {
     // TODO: Accuracy
-    return cur_price * order->quantity * 0.000005;
+    return cur_price * order->quantity * 0.0000005;
 }
 
 // Checks if the price_per_share of an asset will go out-of-bounds
