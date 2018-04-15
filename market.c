@@ -128,6 +128,7 @@ t_order* breakup_order(t_order* order)
     }
     new->quantity = order->quantity / 2;
     order->quantity /= 2;
+    return new;
 }
 
 void breakdown()
