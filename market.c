@@ -283,8 +283,12 @@ int main(int argc, char* argv[])
         else
         {
             // TODO: Adjust the time of the order(s)
+            if (FEL.size > 0)
+                cur_order->time = ((t_order*)(FEL.first->data))->time;
+            else
+                cur_order->time += 1;
             push_front(&FEL, (void*)cur_order);
-            push_front(&FEL, (void*)breakup_order(cur_order));
+            //push_front(&FEL, (void*)breakup_order(cur_order));
         }
     }
     print_results();
