@@ -284,7 +284,7 @@ int main(int argc, char* argv[])
         {
             // TODO: Adjust the time of the order(s)
             if (FEL.size > 0)
-                cur_order->time = ((t_order*)(FEL.first->data))->time;
+                cur_order->time = ((t_order*)FEL.first->data)->time + 1;
             else
                 cur_order->time += 1;
             push_front(&FEL, (void*)cur_order);
