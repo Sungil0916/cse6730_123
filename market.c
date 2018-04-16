@@ -7,11 +7,14 @@
 #include "fargs.h"
 
 int cur_time = 9;
+int prev_time = 8;
 int end_time = 17;
 int use_luld = 0;
 int orders_per_hour = 1000;
 int include_all = 0;
 double open_price, cur_price;
+double ex_rate = 0.00000034;
+double luld_bound = 0.05;
 
 int n_order_dist = 1;
 t_ndist* order_dists;
@@ -57,8 +60,7 @@ double multi_rand_normal(int count, t_ndist* dists, double* weights)
 // Calculate LULD for the asset
 void calc_limits()
 {
-    // TODO: Accuracy
-    double dp = cur_price * 0.05;
+    double dp = cur_price * luld_bound;
     threshold.min = cur_price - dp;
     threshold.max = cur_price + dp;
 }
@@ -71,12 +73,15 @@ void setup_orders()
     clear(&history_time);
     int n_hours = end_time - cur_time;
     int n_orders = n_hours * orders_per_hour;
+    int r;
     t_order* order;
     for (int i = 0; i < n_orders; i++)
     {
         order = malloc(sizeof(t_order));
         order->time = (i / orders_per_hour) + cur_time;
-        order->quantity = (int)multi_rand_normal(n_order_dist, order_dists, order_dist_weights);
+        r = (int)multi_rand_normal(n_order_dist, order_dists, order_dist_weights);
+        if (r == 0) r = 1;
+        order->quantity = r;
         push_front(&FEL, order);
     }
 }
@@ -84,8 +89,7 @@ void setup_orders()
 // Adjust the price of an asset based on an order that went through
 double get_change_in_asset_price(t_order* order)
 {
-    // TODO: Accuracy
-    return cur_price * order->quantity * 0.0000005;
+    return cur_price * order->quantity * ex_rate;
 }
 
 // Checks if the price_per_share of an asset will go out-of-bounds
@@ -101,12 +105,14 @@ int is_valid(t_order* order)
 void process_order(t_order* order)
 {
     // Record asset price at the current time
-    double* nums = malloc(sizeof(double) * 2);
-    nums[0] = cur_price;
-    nums[1] = (double)cur_time;
-    push_back(&history_price, &nums[0]);
-    push_back(&history_time, &nums[1]);
-    // Adjust the price
+    if (include_all || cur_time > prev_time) {
+        double* nums = malloc(sizeof(double) * 2);
+        nums[0] = cur_price;
+        nums[1] = (double)cur_time;
+        push_back(&history_price, &nums[0]);
+        push_back(&history_time, &nums[1]);
+        prev_time = cur_time;
+    }
     cur_price += get_change_in_asset_price(order);
     free(order);
     processed_orders++;
@@ -163,8 +169,7 @@ void get_args(int argc, char* argv[])
     if (ind >= 0)
     {
         use_luld = 1;
-        if (ind + 1 < argc && (strcmp(argv[ind + 1], "0") == 0 || strcmp(argv[ind + 1], "false") == 0))
-            use_luld = 0;
+        luld_bound = atof(argv[ind + 1]);
     }
     
     ind = get_arg_index("include_all", argc, argv);
@@ -174,6 +179,10 @@ void get_args(int argc, char* argv[])
         if (ind + 1 < argc && (strcmp(argv[ind + 1], "0") == 0 || strcmp(argv[ind + 1], "false") == 0))
             include_all = 0;
     }
+    
+    ind = get_arg_index("ex_rate", argc, argv);
+    if (ind >= 0)
+        ex_rate = atof(argv[ind + 1]);
     
     // Distributions
     ind = get_arg_index("n_means", argc, argv);
@@ -234,24 +243,17 @@ void print_results()
     // Write to file
     FILE* file = fopen(filename, "w+");
     fprintf(file, "time,price\n");
-    int prev_time = (int)(*(double*)history_time.first->data);
-    int cur_time;
-    for (int i = 1; i < history_price.size; i++)
+    t_list_node* node_price = history_price.first;
+    t_list_node* node_time = history_time.first;
+    while (node_price)
     {
-        cur_time = (int)(*(double*)element_at(&history_time, i));
-        if (include_all || cur_time > prev_time)
-        {
-            fprintf(file, "%d,%0.2f\n",
-                prev_time,
-                *(double*)element_at(&history_price, i - 1));
-            prev_time = cur_time;
-        }
-        free(element_at(&history_price, i - 1));
+        fprintf(file, "%1f,%0.2f\n",
+            *(double*)node_time->data,
+            *(double*)node_price->data);
+        free(node_price->data);
+        node_price = node_price->next;
+        node_time = node_time->next;
     }
-    fprintf(file, "%d,%0.2f\n",
-                cur_time,
-                *(double*)element_at(&history_price, history_price.size - 1));
-    free(element_at(&history_price, history_price.size - 1));
     fclose(file);
     fprintf(stdout, "Price history written to \"%s\".\n", filename);
     fprintf(stdout, "Simulation terminated successfully.\n");
@@ -282,7 +284,6 @@ int main(int argc, char* argv[])
         // Invalid order
         else
         {
-            // TODO: Adjust the time of the order(s)
             if (FEL.size > 0)
                 cur_order->time = ((t_order*)FEL.first->data)->time + 1;
             else
@@ -291,6 +292,13 @@ int main(int argc, char* argv[])
             //push_front(&FEL, (void*)breakup_order(cur_order));
         }
     }
+    // Record last value
+    double* nums = malloc(sizeof(double) * 2);
+    nums[0] = cur_price;
+    nums[1] = (double)cur_time + 1;
+    push_back(&history_price, &nums[0]);
+    push_back(&history_time, &nums[1]);
+    // Finish
     print_results();
     breakdown();
 }
