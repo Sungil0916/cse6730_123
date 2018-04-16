@@ -6,10 +6,11 @@
 #include "market.h"
 #include "fargs.h"
 
-int cur_time = 9;
+int start_time = 9;
 int prev_time = 8;
 int end_time = 17;
 int use_luld = 0;
+int cur_time;
 int orders_per_hour = 1000;
 int include_all = 0;
 double open_price, cur_price;
@@ -268,13 +269,16 @@ void print_results()
         stdev(&history_price));
     // Write to file
     FILE* file = fopen(filename, "w+");
-    fprintf(file, "time,price\n");
+    fprintf(file, "time,reltime,price\n");
     t_list_node* node_price = history_price.first;
     t_list_node* node_time = history_time.first;
+    int tm;
     while (node_price)
     {
-        fprintf(file, "%1f,%0.2f\n",
-            *(double*)node_time->data,
+        tm = (int)*(double*)node_time->data;
+        fprintf(file, "%d,%d,%0.2f\n",
+            tm,
+            tm - start_time,
             *(double*)node_price->data);
         free(node_price->data);
         node_price = node_price->next;
@@ -290,6 +294,7 @@ int main(int argc, char* argv[])
     // Setup
     get_args(argc, argv);
     cur_price = open_price;
+    cur_time = start_time;
     setup_orders();
     calc_limits();
     
