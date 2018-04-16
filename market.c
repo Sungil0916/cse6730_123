@@ -232,14 +232,40 @@ void get_args(int argc, char* argv[])
         filename = argv[ind + 1];
 }
 
+double stdev(t_list* list)
+{
+    // Mean
+    double mean = 0;
+    t_list_node* cur_node = list->first;
+    while (cur_node)
+    {
+        mean += *(double*)cur_node->data;
+        cur_node = cur_node->next;
+    }
+    mean /= (double)list->size;
+    // Deviation
+    double dev = 0;
+    double diff;
+    cur_node = list->first;
+    while (cur_node)
+    {
+        diff = *(double*)cur_node->data - mean;
+        dev += diff * diff;
+        cur_node = cur_node->next;
+    }
+    dev /= (double)list->size;
+    return dev;
+}
+
 void print_results()
 {
-    fprintf(stdout, "r-time\tproc\tigno\topen\t\tclose\n");
-    fprintf(stdout, "%0.2f\t%d\t%d\t$%0.2f\t\t$%0.2f\n",
+    fprintf(stdout, "rtime\tprocessed\tignored\topen\t\tclose\tvolatility\n");
+    fprintf(stdout, "%0.2f\t%d\t\t%d\t$%0.2f\t\t$%0.2f\t%0.2f\n",
         difftime(time(NULL), real_start_time),
         processed_orders,
         FEL.size,
-        open_price, cur_price);
+        open_price, cur_price,
+        stdev(&history_price));
     // Write to file
     FILE* file = fopen(filename, "w+");
     fprintf(file, "time,price\n");
