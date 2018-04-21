@@ -1,0 +1,54 @@
+__FAMILY DOLLAR__ (4.012e-6)
+___________________________________________
+        Open    Close   Volat
+Target: 11.777  11.502  0.191
+Actual: 11.777  11.496  0.148
+5% bnd: 11.777  -
+1% bnd: 11.777  11.687  0.076
+
+./sim -open 11.777 -orders_per_hour 257875 -n_means 2 -order_mean 8 -8 -order_var 2 2 -ex_rate 4.012e-6 -order_weight 1 0.9995
+___________________________________________
+        Open    Close   Volat
+Target: 15.408  15.769  0.191
+Actual: 15.408  15.746  0.206
+5% bnd: 15.408  15.709  0.187
+1% bnd: 15.408  15.324  0.095
+
+./sim -open 15.408 -orders_per_hour 257875 -n_means 2 -order_mean 8 -8 -order_var 2 2 -ex_rate 4.012e-6 -order_weight 1 0.998
+___________________________________________
+        Open    Close   Volat
+Target: 14.627  14.627  0.191
+Actual: 14.627  14.652  0.176
+5% bnd: -
+1% bnd: 14.627  14.508  0.100
+
+./sim -open 14.627 -orders_per_hour 257875 -n_means 2 -order_mean 8 -8 -order_var 3 3 -ex_rate 4.012e-6 -order_weight 1 1.0006
+___________________________________________
+
+
+__GOOGLE__ (1.437e-6)
+___________________________________________
+        Open    Close   Volat
+Target: 111.24  105.00  0.155
+Actual: 111.24  105.01  2.216
+5% bnd: 111.24  105.84  2.036
+1% bnd: 111.24  110.30  0.326
+
+./sim -open 111.24 -orders_per_hour 31215 -n_means 2 -order_mean 20 -20 -order_var 1 1 -ex_rate 1.437e-6 -order_weight 1 1.021
+___________________________________________
+        Open    Close   Volat
+Target: 101.19  108.35  0.155
+Actual: 101.19  108.31  2.286
+5% bnd: 101.19  106.17  1.825
+1% bnd: 101.19  102.13  0.278
+
+./sim -open 101.19 -orders_per_hour 31215 -n_means 2 -order_mean 20 -20 -order_var 1 1 -ex_rate 1.437e-6 -order_weight 1 0.9852
+___________________________________________
+        Open    Close   Volat
+Target: 219.47  219.10  0.155
+Actual: 219.47  219.31  1.104
+5% bnd: -
+1% bnd: 219.47  220.66  1.183
+
+./sim -open 219.47 -orders_per_hour 31215 -n_means 2 -order_mean 20 -20 -order_var 1 1 -ex_rate 1.437e-6 -order_weight 1 1.005
+

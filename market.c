@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <math.h>
 #include "market.h"
 #include "fargs.h"
 
@@ -255,13 +256,18 @@ double stdev(t_list* list)
         cur_node = cur_node->next;
     }
     dev /= (double)list->size;
-    return dev;
+    return sqrt(dev);
 }
 
 void print_results()
 {
-    fprintf(stdout, "rtime\tprocessed\tignored\topen\t\tclose\tvolatility\n");
-    fprintf(stdout, "%0.2f\t%d\t\t%d\t$%0.2f\t\t$%0.2f\t%0.2f\n",
+    fprintf(stdout, "rtime\tprocessed\tignored\topen\tclose\tvolatility\n");
+    char* str;
+    if ((int)open_price / 100 >= 1)
+        str = "%0.3f\t%d\t\t%d\t$%0.2f\t$%0.2f\t%0.3f\n";
+    else
+        str = "%0.3f\t%d\t\t%d\t$%0.3f\t$%0.3f\t%0.3f\n";
+    fprintf(stdout, str,
         difftime(time(NULL), real_start_time),
         processed_orders,
         FEL.size,
@@ -276,7 +282,7 @@ void print_results()
     while (node_price)
     {
         tm = (int)*(double*)node_time->data;
-        fprintf(file, "%d,%d,%0.2f\n",
+        fprintf(file, "%d,%d,%0.4f\n",
             tm,
             tm - start_time,
             *(double*)node_price->data);
