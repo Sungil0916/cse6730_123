@@ -234,6 +234,7 @@ void get_args(int argc, char* argv[])
         filename = argv[ind + 1];
 }
 
+// Calculates standard deviation
 double stdev(t_list* list)
 {
     // Mean
@@ -259,6 +260,7 @@ double stdev(t_list* list)
     return sqrt(dev);
 }
 
+// Records results of the simulation
 void print_results()
 {
     fprintf(stdout, "rtime\tprocessed\tignored\topen\tclose\tvolatility\n");

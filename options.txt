@@ -1,3 +1,6 @@
+This file contains some commands that were used in the report. They should produce
+the same output, since the RNG uses the default seed.
+
 __FAMILY DOLLAR__ (4.012e-6)
 ___________________________________________
         Open    Close   Volat
